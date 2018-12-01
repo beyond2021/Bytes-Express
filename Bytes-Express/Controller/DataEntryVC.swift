@@ -7,8 +7,30 @@
 //
 
 import Cocoa
+protocol DataEntryVCDelegate {
+    func dismiss()
+}
 
 class DataEntryVC: NSViewController {
+    var delegate: DataEntryVCDelegate?
+    
+    
+    override func loadView() {
+       
+        print("PrimaryController.loadView")
+        view = NSView()
+        
+        
+    }
+    let dismissButton : NSButton = {
+        let button = NSButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+      
+        button.title = "Dismiss"
+        return button
+    }()
+  
+    
 
     @IBOutlet weak var keyTextField: NSTextField!
     
@@ -17,8 +39,39 @@ class DataEntryVC: NSViewController {
     private var _value:String = ""
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.view.wantsLayer = true
         // Do view setup here.
-        keyTextField.becomeFirstResponder()
+//        keyTextField.becomeFirstResponder()
+        print("PrimaryController.viewDidLoad")
+        let array = [unichar(NSLeftArrowFunctionKey)]
+        dismissButton.keyEquivalent = String(utf16CodeUnits: array, count: 1)
+        view.addSubview(dismissButton)
+        dismissButton.anchor(top: view.topAnchor, left: view.leftAnchor, bottom: nil, right: nil, paddingTop: 20, paddingLeft: 20, paddingBottom: 0, paddingRight: 0, width: 80, height: 40)
+        // SheetController viewDidLoad()
+        // Set Accessibility Label
+        dismissButton.setAccessibilityLabel("DismissButton")
+        
+        // Set button target and action
+        dismissButton.target = nil
+
+        dismissButton.action = #selector(MainVC.dismissAction(button:))
+//        dismissButton.target = self
+//        dismissButton.action = #selector(dismissMe)
+        
+        // Set nextResponder
+        dismissButton.nextResponder = self.parent
+        
+    }
+    @objc func dismissMe() {
+//        delegate?.dismiss()
+//        dismissMe()
+    }
+    
+    override func awakeFromNib() {
+        if self.view.layer != nil {
+            let color = NSColor.tableViewBackgroundColor.cgColor
+            self.view.layer?.backgroundColor = color
+        }
     }
     @IBAction func UpdateDataButtonClicked(_ sender: NSButton) {
         if keyTextField.stringValue != "" {

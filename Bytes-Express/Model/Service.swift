@@ -26,19 +26,10 @@ struct Service {
     static func loadServiceFromJSON(json: Dictionary<String,AnyObject>) -> [Service]{
         var serviceArray = [Service]()
         for (key, value) in json {
-            guard let val = value as? Dictionary<String,AnyObject> else { return [Service]()}
-//            var id: String, val: AnyObject
-//            id = key
-//            val = value
-//            val = value
-//            let val = value["description"]
-//            if let value = value as? String {
-//                val = value
-//            } else {
-//                val = "No data"
-//            }
-            serviceArray.append(Service(key: key, value: val ))
-//            print(" \(String(describing: val.values))")
+            if let newValue = value as? Dictionary<String, AnyObject> {
+                let service = Service(key: key, value: newValue)
+                serviceArray.append(service)
+            }
         }
         return serviceArray
         

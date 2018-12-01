@@ -14,9 +14,11 @@ protocol DataServiceDelegate: class {
 class DataService{
     static let instance = DataService()
     weak var delegate : DataServiceDelegate?
+//    var serviceArray = [Service]()
     var serviceArray = [Service]()
-    
-    
+    var serviceString = ""
+    var singleServiceString = ""
+  
     
     /* func to get our data*/
     func getServicesApiData(){
@@ -39,23 +41,21 @@ class DataService{
                     }
                     return
                 }
-//                print("JSON from firebase: \(json)")
-                
-                let unSortedJsonArray = Service.loadServiceFromJSON(json: json )
-                let sortedJsonArray = unSortedJsonArray.sorted {$0.key < $1.key}
-                self.serviceArray = sortedJsonArray
-//                print(self.serviceArray)
-
-                
+               
+                do {
+                    let jsonData = try JSONSerialization.data(withJSONObject: json, options: [])
+                    if let jsonString = String(data: jsonData, encoding: String.Encoding.utf8) {
+                        self.serviceString = jsonString
+                        self.serviceArray = Service.loadServiceFromJSON(json: json )
+                    }
+                } catch {
+                    print(error)
+                }
                 self.delegate?.dataLoaded() //tell s us that the data is loaded because its Async
-                
         }
-
-        
     }
     /* to save data to firebase*/
     func saveServiceDataToFirebase(key: String, value:String){
-        
         let parameters =  [key: value]
         let todoEndpoint: String = "http://localhost:3000/api/v1/services"
         
@@ -82,4 +82,72 @@ class DataService{
         
     }
 }
+}
+extension Data
+{
+    func dataToJSON() -> Any? {
+        do {
+            return try JSONSerialization.jsonObject(with: self, options: [])
+        } catch let myJSONError {
+            print(myJSONError)
+        }
+        return nil
+    }
+}
+
+
+extension String
+{
+    func removeFrontBrackets() -> String
+    {
+//        return self.removingPercentEncoding!
+        return self.replacingOccurrences(of: "[", with: "{", options: .literal, range: nil)
+        
+    }
+    func removebackBrackets() -> String
+    {
+        //        return self.removingPercentEncoding!
+        return self.replacingOccurrences(of: "]", with: "}", options: .literal, range: nil)
+        
+    }
+    func addQuotesAfter() -> String {
+        return (self + "\"")
+    }
+    func addQuotesBefore() -> String {
+        return ( "\"" + self)
+    }
+    func addColonAfter() -> String {
+        return (self + ":")
+        
+    }
+
+    
+}
+
+
+extension Dictionary where Key : CustomStringConvertible, Value : AnyObject {
+    func printKeys(){
+//        print("new item added: \(key.description) with value: \(value)")
+        for (key, value) in self {
+            if let key = key as? String {
+                let preKey = key.addQuotesAfter()
+                let postKey = preKey.addQuotesBefore()
+                let realKey = postKey.addColonAfter()
+                if let val = value as? [String:String] {
+//                   print(postKey, val)
+                    do {
+                        let jsonData = try JSONSerialization.data(withJSONObject: val, options: [])
+                        if let jsonString = String(data: jsonData, encoding: String.Encoding.utf8) {
+                            print(realKey, jsonString)
+                        }
+                    } catch {
+                        print(error)
+                    }
+
+                }
+                
+            }
+        
+        }
+    }
 }
