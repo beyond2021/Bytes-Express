@@ -7,6 +7,7 @@ target 'Bytes-Express' do
 
   # Pods for Bytes-Express
     pod 'Alamofire'
+    pod 'SwiftyJSON', '~> 4.0'
 
   target 'Bytes-ExpressTests' do
     inherit! :search_paths

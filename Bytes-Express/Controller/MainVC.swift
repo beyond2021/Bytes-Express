@@ -8,10 +8,8 @@
 
 import Cocoa
 
-class MainVC: NSViewController, DataEntryVCDelegate {
-    func dismiss() {
-         self.dismiss(self.presentedViewControllers!.first!)
-    }
+class MainVC: NSViewController {
+    
     
     static let services: String = "http:localhost:3000/api/v1/services"
     static let cabling: String = "cabling"
@@ -70,8 +68,12 @@ class MainVC: NSViewController, DataEntryVCDelegate {
         }
         
     }
+    var value:String?
+    
+    var key : Int?
     let firebaseDataOutputTextView: NSTextView = {
         let sv = NSTextView(frame: NSRect.zero)
+        sv.isEditable = false
         sv.translatesAutoresizingMaskIntoConstraints = false
         return sv
     }()
@@ -91,9 +93,6 @@ class MainVC: NSViewController, DataEntryVCDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.view.wantsLayer = true
-        let dataEntryVC = DataEntryVC()
-        dataEntryVC.delegate = self
-        
         self.view.addSubview(refreshButton)
         refreshButton.anchor(top: self.view.topAnchor, left: self.view.leftAnchor, bottom: nil, right: nil, paddingTop: 20, paddingLeft: 20, paddingBottom: 0, paddingRight: 0, width: 80, height: 60)
         self.view.addSubview(updateFirebaseButton)
@@ -101,7 +100,7 @@ class MainVC: NSViewController, DataEntryVCDelegate {
         self.view.addSubview(servicesButtons)
         servicesButtons.anchor(top: self.refreshButton.bottomAnchor, left: self.view.leftAnchor, bottom: nil, right: self.view.rightAnchor, paddingTop: 20, paddingLeft: 20, paddingBottom: 0, paddingRight: 20, width: 0, height: 60)
         self.view.addSubview(firebaseDataOutputTextView)
-        firebaseDataOutputTextView.anchor(top: servicesButtons.bottomAnchor, left: self.view.leftAnchor, bottom: self.view.bottomAnchor, right: self.view.rightAnchor, paddingTop: 20, paddingLeft: 20, paddingBottom: 20, paddingRight: 20, width: 0, height: 0)
+        firebaseDataOutputTextView.anchor(top: servicesButtons.bottomAnchor, left: self.view.leftAnchor, bottom: nil, right: self.view.rightAnchor, paddingTop: 20, paddingLeft: 20, paddingBottom: 0, paddingRight: 20, width: 0, height: 820 )
         DataService.instance.delegate = self
         DataService.instance.getServicesApiData()
         self.updateFirebaseLabel()
@@ -134,32 +133,50 @@ class MainVC: NSViewController, DataEntryVCDelegate {
         
     }
     override func prepare(for segue: NSStoryboardSegue, sender: Any?) {
-        // showDataEntry
-        //
+        if (segue.identifier == "showDataEntry") {
+            //get a reference to the destination view controller
+            let destinationVC:DataEntryVC = segue.destinationController as! DataEntryVC
+            destinationVC.firebaseString = firebaseDataOutputTextView.textStorage?.string
+            destinationVC.value = value
+            switch servicesButtons.indexOfSelectedItem {
+            case 0:
+                destinationVC.key = "services"
+            case 1:
+                destinationVC.key = MainVC.cabling
+            case 2:
+                destinationVC.key = MainVC.cameras
+            case 3:
+                destinationVC.key = MainVC.computers
+            case 4:
+                destinationVC.key = MainVC.networking
+            case 5:
+                destinationVC.key = MainVC.techCare
+            case 6:
+                destinationVC.key = MainVC.wifi
+            default :
+                break
+            }
+        }
     }
     
     @objc private func showUpdateController(sender :NSButton){
-        print("trying to show updater")
+//        print("trying to show updater")
         let pc = DataEntryVC(nibName: nil, bundle: nil)
-        print(pc.isViewLoaded)
+//        print(pc.isViewLoaded)
         let x = pc.view // accessing the view property before it has a value
         x.layer?.backgroundColor = CGColor.init(red: 1, green: 0, blue: 0, alpha: 1)
-        print(pc.isViewLoaded)
-//        present(pc, asPopoverRelativeTo: (sender.bounds), of: sender, preferredEdge: NSRectEdge.maxX, behavior: NSPopover.Behavior.applicationDefined)
+//        print(pc.isViewLoaded)
         let push = PushAnimator()
         present(pc, animator: push)
-       
   performSegue(withIdentifier: "showDataEntry", sender: self)
-        
     }
     private func updateFirebaseLabelWithService(singleService:String){
         let serviceArray = DataService.instance.serviceArray
-        var serviceDictionary = [String:Dictionary<String, AnyObject>]()
         for service in serviceArray {
             if service.key == singleService {
-                serviceDictionary = [service.key : service.value]
-                let jsonData = try! JSONSerialization.data(withJSONObject: serviceDictionary, options: [])
+                let jsonData = try! JSONSerialization.data(withJSONObject: service.value, options: [])
                 let decoded = String(data: jsonData, encoding: .utf8)!
+                self.value = decoded
                 firebaseDataOutputTextView.textStorage?.append(NSAttributedString(string:decoded))
             }
         }
@@ -170,8 +187,7 @@ extension MainVC: DataServiceDelegate {
         print("Data has finished loading.")
         updateFirebaseLabel()
     }
-    
-    
+
 }
 class PushSegue: NSStoryboardSegue {
     override func perform() {
@@ -209,7 +225,6 @@ class PushAnimator:  NSObject, NSViewControllerPresentationAnimator  {
                 viewController.view.removeFromSuperview()
                 viewController.removeFromParent()
             }
-            
             viewController.view.animator().frame = futureFrame
         }, completionHandler: nil)
         

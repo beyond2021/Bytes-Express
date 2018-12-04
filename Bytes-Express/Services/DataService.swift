@@ -45,6 +45,8 @@ class DataService{
                 do {
                     let jsonData = try JSONSerialization.data(withJSONObject: json, options: [])
                     if let jsonString = String(data: jsonData, encoding: String.Encoding.utf8) {
+                        
+                        
                         self.serviceString = jsonString
                         self.serviceArray = Service.loadServiceFromJSON(json: json )
                     }
@@ -56,33 +58,41 @@ class DataService{
     }
     /* to save data to firebase*/
     func saveServiceDataToFirebase(key: String, value:String){
-        let parameters =  [key: value]
-        let todoEndpoint: String = "http://localhost:3000/api/v1/services"
-        
-        Alamofire.request(todoEndpoint, method: .post, parameters: parameters, encoding: URLEncoding.default)
-            .responseJSON { response in
-                guard response.result.error == nil else {
-                    // got an error in getting the data, need to handle it
-                    print("error calling POST on /data/technologies")
-                    print(response.result.error!)
-                    return
-                }
-                // make sure we got some JSON since that's what we expect
-                guard let json = response.result.value as? [String: Any] else {
-                    print("didn't get todo object as JSON from API")
-                    if let error = response.result.error {
-                        print("Error: \(error)")
-                    }
-                    return
-                }
-                
-                print(response)
+        let todoEndpoint: String = "http://localhost:3000/api/v1/\(key)"
+        let data:Data = value.data(using: String.Encoding.utf8)!
+        do {
+            let json: Dictionary = try JSONSerialization.jsonObject(with: data, options: []) as! Dictionary<String,String>
+            let parameters = json
+            print(parameters)
+            let headers = [
+                "Content-Type": "application/json"
+            ]
+            
+            Alamofire.request(todoEndpoint, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers).responseJSON { (response) in
+                                    guard response.result.error == nil else {
+                                        // got an error in getting the data, need to handle it
+                                        print("error calling POST")
+                                        print(response.result.error!)
+                                        return
+                                    }
+                                    // make sure we got some JSON since that's what we expect
+                                    guard let json = response.result.value as? [String: Any] else {
+                                        print("didn't get todo object as JSON from API")
+                                        if let error = response.result.error {
+                                            print("Error: \(error)")
+                                        }
+                                        return
+                                    }
+                            }
+            
+        } catch {
+            print("error converting string to dict")
+        }
 
-       
-        
-    }
+        }
+ 
 }
-}
+
 extension Data
 {
     func dataToJSON() -> Any? {
